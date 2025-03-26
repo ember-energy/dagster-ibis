@@ -1,35 +1,62 @@
 from contextlib import contextmanager
 from typing import Iterator, Union
 from dagster._core.storage.db_io_manager import DbClient
+from dagster._utils.backoff import backoff
+from dagster_duckdb.io_manager import _get_cleanup_statement, DuckDbClient
 import dagster as dg
 import ibis
 
 
 class IbisClient(DbClient[ibis.BaseBackend]):
-    def __init__(self, ibis_backend: ibis.BaseBackend) -> None:
-        self.ibis_backend = ibis_backend
-        super().__init__()
+    @staticmethod
+    def execute_sql(query: str, connection: ibis.BaseBackend):
+        try:
+            connection.raw_sql(query)  # type: ignore
+        except AttributeError:
+            raise NotImplementedError(
+                f"Connection of type ({type(connection)}) has no ability to execute sql"
+            )
 
     @staticmethod
     def delete_table_slice(
         context: dg.OutputContext,
         table_slice: dg.TableSlice,
         connection: ibis.BaseBackend,
-    ) -> None: ...
+    ) -> None:
+        query = _get_cleanup_statement(table_slice)
+        IbisClient.execute_sql(query, connection)
 
     @staticmethod
     def ensure_schema_exists(
         context: dg.OutputContext,
         table_slice: dg.TableSlice,
         connection: ibis.BaseBackend,
-    ) -> None: ...
+    ) -> None:
+        query = f"create schema if not exists {table_slice.schema}"
+        IbisClient.execute_sql(query, connection)
 
     @staticmethod
-    def get_select_statement(table_slice: dg.TableSlice) -> str: ...
+    def get_select_statement(table_slice: dg.TableSlice) -> str:
+        return DuckDbClient.get_select_statement(table_slice)
 
     @staticmethod
     @contextmanager
     def connect(
         context: Union[dg.OutputContext, dg.InputContext],
         table_slice: dg.TableSlice,
-    ) -> Iterator[ibis.BaseBackend]: ...
+    ) -> Iterator[ibis.BaseBackend]:
+        resource_config = context.resource_config
+        assert resource_config is not None
+
+        conn = backoff(
+            fn=ibis.connect,
+            retry_on=(RuntimeError, ibis.IbisError),
+            kwargs={
+                "database": resource_config["database"],
+            },
+            max_retries=10,
+        )
+
+        yield conn
+
+        conn.disconnect()

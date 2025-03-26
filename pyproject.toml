@@ -9,7 +9,8 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "dagster>=1.10.6",
-    "ibis-framework>=10.3.1",
+    "dagster-duckdb>=0.26.6",
+    "ibis-framework[duckdb]>=10.3.1",
 ]
 
 [build-system]

@@ -19,14 +19,12 @@ class IbisIOManager(DbIOManager):
     def __init__(
         self,
         *,
-        ibis_backend: ibis.BaseBackend,
         database: str,
         schema: Optional[str] = None,
     ):
-        self._db_client = IbisClient(ibis_backend)
         super().__init__(
             type_handlers=[IbisTableTypeHandler()],
-            db_client=self._db_client,
+            db_client=IbisClient(),
             database=database,
             schema=schema,
             io_manager_name="ibis_io_manager",
@@ -52,11 +50,10 @@ def build_ibis_io_manager(
     ibis_backend: ibis.BaseBackend,
 ) -> dg.IOManagerDefinition:
     @dg.io_manager(config_schema=io_manager_base.to_config_schema())
-    def duckdb_io_manager(init_context):
+    def ibis_io_manager(init_context):
         return IbisIOManager(
-            ibis_backend=ibis_backend,
             database=init_context.resource_config["database"],
             schema=init_context.resource_config.get("schema"),
         )
 
-    return duckdb_io_manager
+    return ibis_io_manager
