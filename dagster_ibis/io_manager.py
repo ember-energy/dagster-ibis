@@ -1,59 +1,60 @@
-from typing import (
-    Optional,
-    Sequence,
-    Type,
-    Any,
-    cast,
-)
+from abc import abstractmethod
+from contextlib import contextmanager
+from typing import Any, Dict, Optional, Sequence, Type, cast
 
-from dagster._core.storage.db_io_manager import DbIOManager, DbClient
-import dagster as dg
-import dagster._check as check
 import ibis
+from dagster import IOManagerDefinition, OutputContext, io_manager
+from dagster._config.pythonic_config import ConfigurableIOManagerFactory
+from dagster._core.definitions.time_window_partitions import TimeWindow
+from dagster._core.storage.db_io_manager import (
+    DbClient,
+    DbIOManager,
+    DbTypeHandler,
+    TablePartitionDimension,
+    TableSlice,
+)
+from dagster._core.storage.io_manager import dagster_maintained_io_manager
+from dagster._utils.backoff import backoff
+from packaging.version import Version
+from pydantic import Field
 
 from dagster_ibis.client import IbisClient
 from dagster_ibis.type_handler import IbisTableTypeHandler
 
 
-class IbisIOManager(DbIOManager):
-    def __init__(
-        self,
-        *,
-        database: str,
-        schema: Optional[str] = None,
-    ):
-        super().__init__(
+def build_ibis_io_manager() -> IOManagerDefinition:
+    @io_manager(config_schema=IbisIOManager.to_config_schema())
+    def ibis_io_manager(init_context):
+        return DbIOManager(
             type_handlers=[IbisTableTypeHandler()],
             db_client=IbisClient(),
-            database=database,
-            schema=schema,
-            io_manager_name="ibis_io_manager",
+            io_manager_name="IbisIOManager",
+            database=init_context.resource_config["database"],
+            schema=None,
             default_load_type=ibis.Table,
         )
 
-    def handle_output(self, context: dg.OutputContext, obj: object) -> None:
-        obj_type = type(obj)
-        self._check_supported_type(obj_type)
-        obj = cast(ibis.Table, obj)
-
-        table_slice = self._get_table_slice(context, context)
-        handler = self._handlers_by_type[obj_type]
-        with self._db_client.connect(context, table_slice) as conn:
-            handler.handle_output(context, table_slice, obj, conn)
-
-    def load_input(self, context: dg.InputContext) -> object:
-        return super().load_input(context)
-
-
-def build_ibis_io_manager(
-    io_manager_base: dg.ConfigurableIOManagerFactory,
-    ibis_backend: ibis.BaseBackend,
-) -> dg.IOManagerDefinition:
-    @dg.io_manager(config_schema=io_manager_base.to_config_schema())
-    def ibis_io_manager(init_context):
-        return IbisIOManager(
-            database=init_context.resource_config["database"],
-            schema=init_context.resource_config.get("schema"),
-        )
-
     return ibis_io_manager
+
+
+class IbisIOManager(ConfigurableIOManagerFactory):
+    database: str = Field(description="Ibis connection string.")
+
+    @staticmethod
+    @abstractmethod
+    def type_handlers() -> Sequence[DbTypeHandler]:
+        ...
+
+    @staticmethod
+    def default_load_type() -> Optional[Type]:
+        return None
+
+    def create_io_manager(self, context) -> DbIOManager:
+        return DbIOManager(
+            db_client=IbisClient(),
+            database=self.database,
+            schema=None,
+            type_handlers=self.type_handlers(),
+            default_load_type=self.default_load_type(),
+            io_manager_name="IbisIOManager",
+        )
