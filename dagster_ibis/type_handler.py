@@ -19,15 +19,41 @@ class IbisTableTypeHandler(DbTypeHandler):
         table_slice: TableSlice,
         obj: ibis.Table,
         connection: ibis.BaseBackend,
-    ): ...
+    ):
+        ...
 
     def load_input(
         self,
         context: dg.InputContext,
         table_slice: TableSlice,
         connection: ibis.BaseBackend,
-    ) -> ibis.Table: ...
+    ) -> ibis.Table:
+        ...
 
     @property
     def supported_types(self) -> Sequence[Type[object]]:
         return [ibis.Table]
+
+
+class DuckDBIbisTableTypeHandler(IbisTableTypeHandler):
+    def handle_output(
+        self,
+        context: dg.OutputContext,
+        table_slice: TableSlice,
+        obj: ibis.Table,
+        connection: ibis.BaseBackend,
+    ):
+        connection.create_table(f"{table_slice.schema}.{table_slice.table}", obj=obj)
+        return
+
+    def load_input(
+        self,
+        context: dg.InputContext,
+        table_slice: TableSlice,
+        connection: ibis.BaseBackend,
+    ) -> ibis.Table:
+        table = connection.table(f"{table_slice.schema}.{table_slice.table}")
+        # FIX: Seems to be a DuckDBPyRelation, not a Table
+        context.log.debug(table)
+        context.log.debug(type(table))
+        return table
