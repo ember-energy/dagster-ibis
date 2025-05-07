@@ -1,10 +1,13 @@
 import dagster as dg
 from abc import abstractmethod
-from typing import Sequence, Type, TypeVar
+from typing import Any, Sequence, Type, TypeVar
 
 from dagster._core.storage.db_io_manager import DbTypeHandler
 from dagster._core.storage.db_io_manager import TableSlice
+from duckdb import DuckDBPyConnection
 import ibis
+from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.common.exceptions import TableNotFound
 
 
 class IbisTableTypeHandler(DbTypeHandler):
@@ -13,22 +16,36 @@ class IbisTableTypeHandler(DbTypeHandler):
     logic of the `custom_db_io_manager`.
     """
 
+    @staticmethod
+    def connection_to_backend(connection: Any) -> ibis.BaseBackend:
+        ...
+
     def handle_output(
         self,
         context: dg.OutputContext,
         table_slice: TableSlice,
         obj: ibis.Table,
-        connection: ibis.BaseBackend,
+        connection: Any,
     ):
-        ...
+        backend: ibis.BaseBackend = connection
+        if table_slice.table in backend.list_tables(database=table_slice.schema):
+            backend.insert(table_slice.table, obj=obj, database=table_slice.schema)
+        else:
+            backend.create_table(
+                table_slice.table,
+                obj=obj,
+                database=table_slice.schema,
+            )
 
     def load_input(
         self,
         context: dg.InputContext,
         table_slice: TableSlice,
-        connection: ibis.BaseBackend,
+        connection: Any,
     ) -> ibis.Table:
-        ...
+        backend: ibis.BaseBackend = connection
+        table = backend.table(table_slice.table, database=table_slice.schema)
+        return table
 
     @property
     def supported_types(self) -> Sequence[Type[object]]:
@@ -36,24 +53,25 @@ class IbisTableTypeHandler(DbTypeHandler):
 
 
 class DuckDBIbisTableTypeHandler(IbisTableTypeHandler):
+    @staticmethod
+    def connection_to_backend(connection: DuckDBPyConnection) -> DuckDBBackend:
+        return ibis.duckdb.from_connection(connection)
+
     def handle_output(
         self,
         context: dg.OutputContext,
         table_slice: TableSlice,
         obj: ibis.Table,
-        connection: ibis.BaseBackend,
+        connection: DuckDBPyConnection,
     ):
-        connection.create_table(f"{table_slice.schema}.{table_slice.table}", obj=obj)
-        return
+        backend = self.connection_to_backend(connection)
+        super().handle_output(context, table_slice, obj, backend)
 
     def load_input(
         self,
         context: dg.InputContext,
         table_slice: TableSlice,
-        connection: ibis.BaseBackend,
+        connection: DuckDBPyConnection,
     ) -> ibis.Table:
-        table = connection.table(f"{table_slice.schema}.{table_slice.table}")
-        # FIX: Seems to be a DuckDBPyRelation, not a Table
-        context.log.debug(table)
-        context.log.debug(type(table))
-        return table
+        backend = self.connection_to_backend(connection)
+        return super().load_input(context, table_slice, backend)
