@@ -10,8 +10,13 @@ import ibis
 
 class IbisClient(DbClient[ibis.BaseBackend]):
     @staticmethod
-    def execute_sql(query: str, connection: ibis.BaseBackend):
+    def execute_sql(
+        context: dg.OutputContext,
+        query: str,
+        connection: ibis.BaseBackend,
+    ):
         try:
+            context.log.debug(f"Executing query:\n{query}")
             result = connection.raw_sql(query)  # type: ignore
             return result
         except AttributeError:
@@ -27,7 +32,7 @@ class IbisClient(DbClient[ibis.BaseBackend]):
     ) -> None:
         query = _get_cleanup_statement(table_slice)
         with suppress(CatalogException):
-            IbisClient.execute_sql(query, connection)
+            IbisClient.execute_sql(context, query, connection)
 
     @staticmethod
     def ensure_schema_exists(
@@ -36,7 +41,7 @@ class IbisClient(DbClient[ibis.BaseBackend]):
         connection: ibis.BaseBackend,
     ) -> None:
         query = f"create schema if not exists {table_slice.schema}"
-        IbisClient.execute_sql(query, connection)
+        IbisClient.execute_sql(context, query, connection)
 
     @staticmethod
     def get_select_statement(table_slice: TableSlice) -> str:

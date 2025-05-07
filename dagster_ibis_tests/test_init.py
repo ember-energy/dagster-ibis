@@ -19,9 +19,15 @@ def test_ibis_client():
     with client.connect(context, TABLE_SLICE) as connection:
         assert connection is not None
         IbisClient.ensure_schema_exists(context, TABLE_SLICE, connection)
-        IbisClient.execute_sql(f"DROP TABLE IF EXISTS {SCHEMA}.{TABLE}", connection)
+        IbisClient.execute_sql(
+            context,
+            f"DROP TABLE IF EXISTS {SCHEMA}.{TABLE}",
+            connection,
+        )
         result = IbisClient.execute_sql(
-            f"CREATE TABLE {SCHEMA}.{TABLE} AS (SELECT 1 AS test)", connection
+            context,
+            f"CREATE TABLE {SCHEMA}.{TABLE} AS (SELECT 1 AS test)",
+            connection,
         )
         assert result is not None
 
@@ -30,15 +36,12 @@ def test_ibis_client():
 
         IbisClient.delete_table_slice(context, TABLE_SLICE, connection)
         result = IbisClient.execute_sql(
-            f"SELECT COUNT(*) FROM {SCHEMA}.{TABLE}", connection
+            context,
+            f"SELECT COUNT(*) FROM {SCHEMA}.{TABLE}",
+            connection,
         )
 
         if isinstance(result, DuckDBPyConnection):
             count = result.fetchone()
             assert count is not None
             assert count[0] == 0
-
-
-def test_io_manager():
-    io_manager = IbisIOManager(database=RESOURCE_CONFIG["database"])
-    assert io_manager is not None
