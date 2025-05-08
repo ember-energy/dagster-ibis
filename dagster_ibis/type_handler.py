@@ -1,13 +1,12 @@
 import dagster as dg
-from abc import abstractmethod
-from typing import Any, Sequence, Type, TypeVar
+from typing import Any, Sequence, Type
 
 from dagster._core.storage.db_io_manager import DbTypeHandler
 from dagster._core.storage.db_io_manager import TableSlice
+from dagster._check import CheckError
 from duckdb import DuckDBPyConnection
 import ibis
 from ibis.backends.duckdb import Backend as DuckDBBackend
-from ibis.common.exceptions import TableNotFound
 
 
 class IbisTableTypeHandler(DbTypeHandler):
@@ -44,10 +43,20 @@ class IbisTableTypeHandler(DbTypeHandler):
         connection: Any,
     ) -> ibis.Table:
         backend: ibis.BaseBackend = connection
+
         # NOTE: for first materialisation of self-dependent assets
         if table_slice.partition_dimensions and len(context.asset_partition_keys) == 0:
             return ibis.memtable({})
+
         table = backend.table(table_slice.table, database=table_slice.schema)
+        column_schema = table.schema()
+        try:
+            context.log.debug(column_schema)
+            context.add_input_metadata(
+                {"schema": dg.JsonMetadataValue(dict(column_schema))}
+            )
+        except (CheckError, AttributeError):
+            context.log.debug(column_schema)
         return table
 
     @property
