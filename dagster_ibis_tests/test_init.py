@@ -1,10 +1,11 @@
 from dagster._core.storage.db_io_manager import TableSlice
 import ibis
 import dagster as dg
+import pandas as pd
 from dagster_ibis.client import IbisClient
 from duckdb import DuckDBPyConnection
 
-from dagster_ibis.io_manager import IbisIOManager
+from dagster_ibis_tests.helper_duckdb import cleanup_table, query_test_db
 
 RESOURCE_CONFIG = {"database": "duckdb://"}
 TABLE = "my_table"
@@ -41,7 +42,9 @@ def test_ibis_client():
             connection,
         )
 
-        if isinstance(result, DuckDBPyConnection):
-            count = result.fetchone()
-            assert count is not None
-            assert count[0] == 0
+        df = query_test_db(
+            f"SELECT COUNT(*) AS COUNT FROM {SCHEMA}.{TABLE}",
+            connection,
+        )
+        assert df.equals(pd.DataFrame({"COUNT": [0]}))
+        cleanup_table(TABLE_SLICE, connection)

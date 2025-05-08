@@ -40,7 +40,7 @@ class IbisClient(DbClient[ibis.BaseBackend]):
         table_slice: TableSlice,
         connection: ibis.BaseBackend,
     ) -> None:
-        query = f"create schema if not exists {table_slice.schema}"
+        query = f"CREATE SCHEMA IF NOT EXISTS {table_slice.schema}"
         IbisClient.execute_sql(context, query, connection)
 
     @staticmethod

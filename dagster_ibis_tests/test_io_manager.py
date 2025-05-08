@@ -5,11 +5,13 @@ import ibis
 from ibis import _
 import dagster as dg
 import pandas as pd
-from dagster_ibis.client import IbisClient
-from duckdb import DuckDBPyConnection
 
 from dagster_ibis.io_manager import build_ibis_io_manager
 from dagster_ibis.type_handler import DuckDBIbisTableTypeHandler
+from dagster_ibis_tests.helper_duckdb import (
+    cleanup_table,
+    get_table_slice_db,
+)
 
 
 DATABASE = "database.duckdb"
@@ -25,6 +27,19 @@ RESOURCES = {
 }
 
 
+def check_values_and_cleanup():
+    my_table_slice = TableSlice("my_table", "public")
+    my_table_df = get_table_slice_db(my_table_slice, connection_str=DATABASE)
+    assert my_table_df.equals(pd.DataFrame({"a": [1, 2, 3]}))
+
+    my_ibis_table_slice = TableSlice("my_ibis_table", "public")
+    my_ibis_table_df = get_table_slice_db(my_ibis_table_slice, connection_str=DATABASE)
+    assert my_ibis_table_df.equals(pd.DataFrame({"a": [2, 3]}))
+
+    cleanup_table(my_table_slice, connection_str=DATABASE)
+    cleanup_table(my_ibis_table_slice, connection_str=DATABASE)
+
+
 def test_io_manager_duckdb_io_manager():
     @dg.asset(io_manager_key="duckdb_io_manager")
     def my_table() -> pd.DataFrame:
@@ -36,6 +51,7 @@ def test_io_manager_duckdb_io_manager():
 
     result = dg.materialize(assets=[my_table, my_ibis_table], resources=RESOURCES)
     assert result.success
+    check_values_and_cleanup()
 
 
 def test_io_manager_ibis_io_manager():
@@ -49,3 +65,4 @@ def test_io_manager_ibis_io_manager():
 
     result = dg.materialize(assets=[my_table, my_ibis_table], resources=RESOURCES)
     assert result.success
+    check_values_and_cleanup()
