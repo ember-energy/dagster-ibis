@@ -44,6 +44,9 @@ class IbisTableTypeHandler(DbTypeHandler):
         connection: Any,
     ) -> ibis.Table:
         backend: ibis.BaseBackend = connection
+        # NOTE: for first materialisation of self-dependent assets
+        if table_slice.partition_dimensions and len(context.asset_partition_keys) == 0:
+            return ibis.memtable({})
         table = backend.table(table_slice.table, database=table_slice.schema)
         return table
 
