@@ -1,0 +1,28 @@
+[project]
+name = "dagster-ibis-duckdb"
+version = "0.1.0"
+description = "Library for interacting with Ibis Tables within a duckdb backend within dagster."
+readme = "README.md"
+authors = [
+    { name = "James Blackwell", email = "33688964+j-blackwell@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dagster>=1.10.6",
+    "ibis-framework[duckdb]>=10.3.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[dependency-groups]
+dev = [
+    "dagster-duckdb-pandas>=0.26.14",
+    "dagster-ibis",
+    "pytest>=8.3.5",
+]
+
+[tool.uv.sources]
+dagster-ibis = { path = "../dagster-ibis", editable = true }
