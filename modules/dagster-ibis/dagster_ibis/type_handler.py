@@ -48,12 +48,10 @@ class IbisTypeHandler(DbTypeHandler):
             return ibis.memtable({})
 
         table = backend.table(table_slice.table, database=table_slice.schema)
-        column_schema = table.schema()
+        column_schema = {k: str(v) for k, v in table.schema().items()}
         try:
             context.log.debug(column_schema)
-            context.add_input_metadata(
-                {"schema": dg.JsonMetadataValue(dict(column_schema))}
-            )
+            context.add_input_metadata({"schema": dg.JsonMetadataValue(column_schema)})
         except (CheckError, AttributeError):
             context.log.debug(column_schema)
         return table
