@@ -6,21 +6,21 @@ from ibis import _
 import dagster as dg
 import pandas as pd
 
-from dagster_ibis.io_manager import build_ibis_io_manager
-from dagster_ibis.type_handler import DuckDBIbisTableTypeHandler
-from dagster_ibis_tests.helper_duckdb import (
+from dagster_ibis_duckdb.io_manager import build_duckdb_ibis_io_manager
+from dagster_ibis_duckdb.type_handler import DuckDBIbisTypeHandler
+from dagster_ibis_duckdb_tests.helper_duckdb import (
     cleanup_table,
     get_table_slice_db,
 )
 
 
 DATABASE = "database.duckdb"
-RESOURCE_CONFIG = {"database": f"duckdb://{DATABASE}"}
+RESOURCE_CONFIG = {"database": DATABASE}
 RESOURCES = {
-    "ibis_io_manager": build_ibis_io_manager().configured(RESOURCE_CONFIG),
+    "ibis_io_manager": build_duckdb_ibis_io_manager().configured(RESOURCE_CONFIG),
     "duckdb_io_manager": build_duckdb_io_manager(
-        type_handlers=[DuckDBPandasTypeHandler(), DuckDBIbisTableTypeHandler()]
-    ).configured({"database": DATABASE}),
+        type_handlers=[DuckDBPandasTypeHandler(), DuckDBIbisTypeHandler()]
+    ).configured(RESOURCE_CONFIG),
 }
 
 
