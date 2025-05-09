@@ -32,7 +32,7 @@ jobs:
 
       - name: Select package
         run: |-
-          cd ${{ env.PACKAGE_NAME }}
+          cd modules/${{ env.PACKAGE_NAME }}
 
       - name: Get version
         run: |-
@@ -40,7 +40,9 @@ jobs:
           echo "VERSION=$(uvx --from=dunamai dunamai from any --no-metadata --style pep440)" >> "$GITHUB_ENV"
 
       - name: Unit test
-        run: uv run pytest
+        run: |-
+          uv sync --group=dev
+          uv run pytest
 
       - name: Build
         run: uv build
