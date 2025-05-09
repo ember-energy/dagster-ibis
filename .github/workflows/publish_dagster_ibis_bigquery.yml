@@ -2,6 +2,7 @@
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
 
 name: Publish dagster-ibis-bigquery to PyPI
+
 on:
   workflow_dispatch:
   push:
@@ -9,7 +10,8 @@ on:
       - 'v*'
 
 env:
-  PACKAGE_NAME: dagster-ibis-bigquery
+  PACKAGE_NAME: dagster_ibis_bigquery
+  DIR_NAME: dagster-ibis-bigquery
 
 permissions:
   contents: 'write'
@@ -30,20 +32,22 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Select package
-        run: |-
-          cd ${{ env.PACKAGE_NAME }}
-
       - name: Get version
+        working-directory: modules/${{ env.DIR_NAME }}
         run: |-
-          git fetch --tags --force
-          echo "VERSION=$(uvx --from=dunamai dunamai from any --no-metadata --style pep440)" >> "$GITHUB_ENV"
+          echo "VERSION=$(uv version --short)" >> "$GITHUB_ENV"
 
       - name: Unit test
-        run: uv run pytest
+        working-directory: modules/${{ env.DIR_NAME }}
+        run: |-
+          uv sync --group=dev
 
       - name: Build
-        run: uv build
+        working-directory: modules/${{ env.DIR_NAME }}
+        run: |-
+          uv build
 
       - name: Publish
-        run: uv publish ./dist/${{env.PACKAGE_NAME}}-${{env.VERSION}}* --token ${{secrets.UV_PUBLISH_TOKEN}}
+        working-directory: modules/${{ env.DIR_NAME }}
+        run: |-
+          uv publish ./dist/${{env.PACKAGE_NAME}}-${{env.VERSION}}* --token ${{secrets.UV_PUBLISH_TOKEN}}
