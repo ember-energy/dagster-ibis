@@ -34,7 +34,8 @@ class IbisDuckDbClient(DuckDbClient):
         connection: DuckDbBackend,
     ) -> None:
         query = f"CREATE SCHEMA IF NOT EXISTS {table_slice.schema}"
-        IbisDuckDbClient.execute_sql(context, query, connection)
+
+        connection.create_database(table_slice.schema, force=True)
 
     @staticmethod
     def get_select_statement(table_slice: TableSlice) -> str:
