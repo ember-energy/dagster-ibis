@@ -1,6 +1,6 @@
 [project]
 name = "dagster-ibis"
-version = "0.1.0"
+version = "0.1.1"
 description = "Base library for interacting with Ibis Tables within dagster."
 readme = "README.md"
 authors = [
