@@ -1,15 +1,15 @@
 [project]
 name = "dagster-ibis"
-version = "0.1.1"
+version = "0.1.2"
 description = "Base library for interacting with Ibis Tables within dagster."
 readme = "README.md"
 authors = [
     { name = "James Blackwell", email = "33688964+j-blackwell@users.noreply.github.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
-    "dagster>=1.10.6",
-    "dagster-duckdb>=0.26.6",
+    "dagster>=1.8",
+    "dagster-duckdb>=0.23.6",
     "ibis-framework>=10.3.1",
 ]
 
