@@ -1,0 +1,19 @@
+[project]
+name = "dagster-ibis-repo"
+version = "0.1.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+        "dagster-ibis",
+        "dagster-ibis-duckdb",
+        "dagster-ibis-bigquery",
+]
+
+[tool.uv.sources]
+dagster-ibis = { workspace = true }
+dagster-ibis-duckdb = { workspace = true }
+dagster-ibis-bigquery = { workspace = true }
+
+[tool.uv.workspace]
+members = ["modules/*"]

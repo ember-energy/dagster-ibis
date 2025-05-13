@@ -1,6 +1,6 @@
 [project]
 name = "dagster-ibis-bigquery"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for interacting with Ibis Tables within a bigquery backend within dagster."
 readme = "README.md"
 authors = [
@@ -11,19 +11,18 @@ dependencies = [
     "dagster>=1.10.6,<1.10.14",
     "dagster-gcp-pandas>=0.26.6",
     "ibis-framework[bigquery]>=10.3.1",
+    "dagster-ibis>=0.1.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv.sources]
+dagster-ibis = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "dagster-ibis",
     "pytest>=8.3.5",
     "python-dotenv>=1.1.0",
 ]
-
-[tool.uv.sources]
-dagster-ibis = { path = "../dagster-ibis", editable = true }

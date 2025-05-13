@@ -1,6 +1,6 @@
 [project]
 name = "dagster-ibis-duckdb"
-version = "0.1.0"
+version = "0.1.1"
 description = "Library for interacting with Ibis Tables within a duckdb backend within dagster."
 readme = "README.md"
 authors = [
@@ -10,19 +10,18 @@ requires-python = ">=3.12"
 dependencies = [
     "dagster>=1.10.6",
     "ibis-framework[duckdb]>=10.3.1",
+    "dagster-ibis",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv.sources]
+dagster-ibis = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "dagster-duckdb-pandas>=0.26.14",
-    "dagster-ibis",
+    "dagster-duckdb-pandas>=0.26.6",
     "pytest>=8.3.5",
 ]
-
-[tool.uv.sources]
-dagster-ibis = { path = "../dagster-ibis", editable = true }
