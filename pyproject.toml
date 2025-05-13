@@ -17,3 +17,10 @@ dagster-ibis-bigquery = { workspace = true }
 
 [tool.uv.workspace]
 members = ["modules/*"]
+
+[dependency-groups]
+dev = [
+        "dagster-ibis[dev]",
+        "dagster-ibis-duckdb[dev]",
+        "dagster-ibis-bigquery[dev]",
+]
