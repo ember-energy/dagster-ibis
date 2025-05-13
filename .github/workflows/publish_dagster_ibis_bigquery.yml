@@ -38,16 +38,13 @@ jobs:
           echo "VERSION=$(uv version --short)" >> "$GITHUB_ENV"
 
       - name: Unit test
-        working-directory: modules/${{ env.DIR_NAME }}
         run: |-
           uv sync --group=dev
 
       - name: Build
-        working-directory: modules/${{ env.DIR_NAME }}
         run: |-
-          uv build
+          uv build --package=${{env.PACKAGE_NAME}}
 
       - name: Publish
-        working-directory: modules/${{ env.DIR_NAME }}
         run: |-
           uv publish ./dist/${{env.PACKAGE_NAME}}-${{env.VERSION}}* --token ${{secrets.UV_PUBLISH_TOKEN}}
