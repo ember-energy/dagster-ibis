@@ -1,6 +1,6 @@
 [project]
 name = "dagster-ibis-duckdb"
-version = "0.1.2"
+version = "0.1.3"
 description = "Library for interacting with Ibis Tables within a duckdb backend within dagster."
 readme = "README.md"
 authors = [
