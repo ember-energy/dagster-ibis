@@ -11,6 +11,9 @@ from dagster_ibis_bigquery.backend_fix import _register_in_memory_table
 class BigQueryIbisTypeHandler(IbisTypeHandler):
     @staticmethod
     def connection_to_backend(connection: Client) -> BigQueryDbBackend:
-        backend: BigQueryDbBackend = ibis.bigquery.connect(connection.project)
+        backend: BigQueryDbBackend = ibis.bigquery.connect(
+            connection.project,
+            location=connection.location,
+        )
         backend._register_in_memory_table = types.MethodType(_register_in_memory_table, backend)
         return backend
